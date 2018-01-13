@@ -1,8 +1,17 @@
 package mandelbrot;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.concurrent.CountDownLatch;
+
 /*
  * Class for Position object
  */
-public class Position {
+public class Position implements Runnable {
 	private int length_x;
 	private int height_y;
 	private String[] pgmdata;
@@ -12,9 +21,92 @@ public class Position {
 	private double max_c_im;
 	private int server_id;
 	private String server_ip;
+	private int max_n;
+	private CountDownLatch latch;
+
+	/*
+	 * create tread in object class postition and then loop trough all the objects
+	 * and call this class.-> will create thread and connect to server ->get
+	 * values->save them in object then check if all threads are finished and
+	 * continue with image assembly.
+	 * 
+	 * after thread is finished i should close the thread in server.
+	 * 
+	 */
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+
+		// create new thread here and run send to server inside the thread.
+//		System.out.println("Hello from a thread!");
+//		System.out.println("server_ip: " + server_ip);
+		
+		
+		
+		try {
+			Socket cliSoc = new Socket(server_ip, server_port);
+
+			PrintWriter out = new PrintWriter(cliSoc.getOutputStream(), true);
+			BufferedReader in = new BufferedReader(new InputStreamReader(cliSoc.getInputStream()));
+
+			String fromServer;
+
+			String get_value_string = "/mandelbrot/" +min_c_re + "/" + min_c_im + "/"
+					+ max_c_re + "/" + max_c_im + "/" + length_x + "/"
+					+ height_y + "/" + max_n;
+			System.out.println("");
+			System.out.print("->Sending to server "+server_ip+"");
+			System.out.println(get_value_string);
+
+			out.println(get_value_string);
+
+			fromServer = in.readLine();
+			String[] image_data = new String[height_y];
+			
+			image_data = fromServer.split(",");
+			
+			pgmdata=image_data;
+			
+			//substract latch
+			latch.countDown();
+			
+			cliSoc.close();
+			
+
+		} catch (UnknownHostException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+	}
+
+
+
+	//pass in latch
+	public void send_to_server(CountDownLatch latch) {
+		this.latch=latch;
+		(new Thread(this)).start();
+		
+		
+		
+
+	}
 	
 	
+		public int getMax_n() {
+		return max_n;
+	}
+
+	public void setMax_n(int max_n) {
+		this.max_n = max_n;
+	}
 	
+
 	public String getServer_ip() {
 		return server_ip;
 	}
@@ -40,8 +132,6 @@ public class Position {
 	public void setLength_x(int length_x) {
 		this.length_x = length_x;
 	}
-
-
 
 	public int getServer_id() {
 		return server_id;
@@ -98,8 +188,5 @@ public class Position {
 	public void setPgmdata(String[] pgmdata) {
 		this.pgmdata = pgmdata;
 	}
-
-
-
 
 }

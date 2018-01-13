@@ -45,6 +45,8 @@ public class srv {
 
 				// accept connection and pass it to the thread
 				new MyThread1(clientSocket).start();
+				
+				
 			}
 			// serversocket.close();
 		} catch (IOException e) {
@@ -192,6 +194,9 @@ class MyThread1 extends Thread {
 			out.println(img_part);
 
 			System.out.println("->returning Response.");
+			
+			//close the thread?
+			
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

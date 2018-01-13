@@ -1,6 +1,7 @@
 package mandelbrot;
 
 import java.util.*;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * Client version of software. Main function That starts the distribution of
@@ -20,13 +21,13 @@ public class Main {
 		// calculate the divisons
 		Position[][] chunks = calculate_divisions_areas(fractal_input.getLength_x(), fractal_input.getHeight_y(),
 				fractal_input.getDivisions(), fractal_input.getMinR(), fractal_input.getMinI(), fractal_input.getMaxR(),
-				fractal_input.getMaxI());
+				fractal_input.getMaxI(),fractal_input.getMaxN());
 
 		// distribute them across servers and acquire all the parts of image
-		// chunks = chunk_distribution_to_servers(chunks, fractal_input);
+		 chunks = chunk_distribution_to_servers(chunks, fractal_input);
 
 		// #-#-#-# distribute all img parts to first server only no Multitreading
-		chunks = chunk_to_first_server(chunks, fractal_input);
+//		chunks = chunk_to_first_server(chunks, fractal_input);
 
 		// finish constructing the image and save it
 		Imgmgm.objects_to_final_image(fractal_input.getLength_x(), fractal_input.getHeight_y(), chunks);
@@ -105,7 +106,7 @@ public class Main {
 				 */
 
 				Position[][] chunks = calculate_divisions_areas(x, y, divisions, min_c_re, min_c_im, max_c_re,
-						max_c_im);
+						max_c_im,max_n);
 
 				// calculate the images seperately.
 				for (int i = 0; i < chunks.length; ++i) {
@@ -145,7 +146,7 @@ public class Main {
 	 * should be in whole image.
 	 */
 	public static Position[][] calculate_divisions_areas(int width, int height, int divisions, double min_c_re,
-			double min_c_im, double max_c_re, double max_c_im) {
+			double min_c_im, double max_c_re, double max_c_im, int maxN) {
 
 		// ffind the x value of all blocks except last one
 		int xvalue = (int) Math.round((double) width / (double) divisions);
@@ -208,6 +209,7 @@ public class Main {
 				chunks[i][j].setMin_c_im(temp_min_I);
 				chunks[i][j].setMax_c_re(temp_max_R);
 				chunks[i][j].setMax_c_im(max_I);
+				chunks[i][j].setMax_n(maxN);
 				// last max is now new min.
 				min_R = temp_max_R;
 			}
@@ -245,10 +247,44 @@ public class Main {
 
 		// designate chunks to servers aka set what chunk goes to what server.
 		chunks = chuk_designation_by_servers(chunks, fractal_input);
+		
+		CountDownLatch latch = new CountDownLatch(fractal_input.getDivisions()*fractal_input.getDivisions());
 
 		// do the treading/waiting part on each chunk here
 
+		for (int i = 0; i < chunks.length; ++i) {
+			for (int j = 0; j < chunks[i].length; ++j) {
+				
+				System.out.println("calling Send to server");
+				//throw them in new thread and get response. also pass in latch reference
+				
+				chunks[i][j].send_to_server(latch);
+				
+				
+			}
+		}
+		
+		//how do i know that all threads is finished?
+		/*
+		 * event listener and ????
+		 */
+		try {
+			latch.await();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		
+		
 		return chunks;
+		
+		
+		
+		
+		
+		
 
 	}
 
