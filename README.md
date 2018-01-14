@@ -9,7 +9,3 @@ Calculates the image by given parameters, size of image and servers to distribut
 3. input the values for the programm in following format: min_c_re min_c_im max_c_re max_c_im iterations width_px height_px divisions server_1 server_2 server_N
 example: -1 -1.5 2 1.5 1024 1000 1000 4 127.0.0.1:5556 127.0.0.1:5557
 
-
-
-#TODO
-multitreading for client and workload distribution across servers.
