@@ -14,11 +14,14 @@ import java.util.concurrent.CountDownLatch;
  */
 
 public class Main {
-	 /**
-	   * This is the main method which makes use of all the other methods to achieve the end goal.
-	   * @param args Unused.
-	   * @return Nothing.
-	   */
+	/**
+	 * This is the main method which makes use of all the other methods to achieve
+	 * the end goal.
+	 * 
+	 * @param args
+	 *            Unused.
+	 * @return Nothing.
+	 */
 	public static void main(String[] args) {
 		System.out.println("Client version of Mandelbrot started.");
 		/// read user input
@@ -43,6 +46,7 @@ public class Main {
 
 	/**
 	 * Reads user input and processes it in object, separates server address.
+	 * 
 	 * @return fractal_input object that contains all input.
 	 */
 	public static UserInput readUserInput() {
@@ -51,29 +55,98 @@ public class Main {
 		Scanner userInput = new Scanner(System.in);
 		UserInput fractal_input = new UserInput();
 		try {
+
 			if (userInput.hasNextLine()) {
-				String input = userInput.nextLine();
-				// split by spaces
-				String[] inputArray = input.split(" ");
+				boolean looping = true;
 
-				// set values.
-				fractal_input.setMinR(Double.parseDouble(inputArray[0]));
-				fractal_input.setMinI(Double.parseDouble(inputArray[1]));
-				fractal_input.setMaxR(Double.parseDouble(inputArray[2]));
-				fractal_input.setMaxI(Double.parseDouble(inputArray[3]));
-				fractal_input.setMaxN(Integer.parseInt(inputArray[4]));
-				fractal_input.setLength_x(Integer.parseInt(inputArray[5]));
-				fractal_input.setHeight_y(Integer.parseInt(inputArray[6]));
-				fractal_input.setDivisions(Integer.parseInt(inputArray[7]));
+				// loop until all input is ok
+				while (looping) {
 
-				// default values is 0-7 ( 8) after 7 starts servers.
-				// loop trough remaining data and clasify them as servers.
-				String[] server_array = new String[inputArray.length - 8];
-				for (int i = 8; i < inputArray.length; ++i) {
-					server_array[i - 8] = inputArray[i];
+					String input = userInput.nextLine();
+					if (!input.isEmpty()) {
+						// split by spaces
+						String[] inputArray = input.split(" ");
+
+						// first check input must be at least 8 units including 1 server
+						if (inputArray.length >= 9) {
+							try {
+								fractal_input.setMinR(Double.parseDouble(inputArray[0]));
+								fractal_input.setMinI(Double.parseDouble(inputArray[1]));
+								fractal_input.setMaxR(Double.parseDouble(inputArray[2]));
+								fractal_input.setMaxI(Double.parseDouble(inputArray[3]));
+								fractal_input.setMaxN(Integer.parseInt(inputArray[4]));
+								fractal_input.setLength_x(Integer.parseInt(inputArray[5]));
+								fractal_input.setHeight_y(Integer.parseInt(inputArray[6]));
+								fractal_input.setDivisions(Integer.parseInt(inputArray[7]));
+							} catch (NumberFormatException nFE) {
+								System.out.println("Error: ne of the expected values was not number.");
+								System.out.println(
+										"minR minIM maxR maxIM maxN width height divisions server1 ... serverN: ");
+								continue;
+							}
+
+							// check for image size and divisions
+							if ((fractal_input.getHeight_y() * fractal_input.getLength_x()) < Math
+									.pow(fractal_input.getDivisions(), 2)) {
+								// not enough possible pixels to divide. cant divide 2x2 pixels in 4^2 parts.
+								System.out.println("Error: Divisions ->" + fractal_input.getDivisions()
+										+ "^2 are to high or image resolution to low [" + fractal_input.getLength_x()
+										+ "x" + fractal_input.getHeight_y() + "]. Choose different parameters.");
+
+								System.out
+										.println("minR minIM maxR maxIM maxN width height divisions server1 ... serverN: ");
+								continue;
+							}
+
+							// loop trough remaining data and clasify them as servers.
+							String[] server_array = new String[inputArray.length - 8];
+							
+							// check if servers adress are correct. ( localhost OR x.x.x.x:xx)
+							IPAddressValidator ipAddressValidator;
+							ipAddressValidator = new IPAddressValidator();
+							
+							boolean ok_for_import = true;
+
+							for (int i = 8; i < inputArray.length; ++i) {
+								server_array[i - 8] = inputArray[i];
+								String[] srv_ip_arr = server_array[i - 8].split(":");
+								boolean ip_valid = ipAddressValidator.validate(srv_ip_arr[0]);
+								boolean port_valid = true;
+
+								// try to parse the port
+								try {
+									Integer.parseInt(srv_ip_arr[1]);
+								} catch (NumberFormatException nFE) {
+									port_valid = false;
+								}
+
+								if ((ip_valid || srv_ip_arr[0].equals("localhost")) && port_valid) {
+
+								} else {
+									System.out.println("Error: Server Address is not correct-> " + inputArray[i]);
+									ok_for_import = false;
+									continue;
+								}
+
+							}
+
+							// only when everything is ok.
+							if (ok_for_import) {
+								fractal_input.setServers(server_array);
+								looping = false;
+								break;
+							}
+
+							System.out
+									.println("minR minIM maxR maxIM maxN width height divisions server1 ... serverN: ");
+						} else {
+							System.out.println("Error:  Missing Arguments. must have at least 9 arguments space seperated.");
+						}
+					} else {
+						System.out.println("minR minIM maxR maxIM maxN width height divisions server1 ... serverN: ");
+					}
+
 				}
-
-				fractal_input.setServers(server_array);
 			}
 		} finally {
 			userInput.close();
@@ -84,6 +157,7 @@ public class Main {
 
 	/**
 	 * calculates fractals locally. prototype
+	 * 
 	 * @return Nothing.
 	 */
 	public static void Calculate_fractals_localy() {
@@ -152,15 +226,25 @@ public class Main {
 	 * calculate the real and imaginary axis boundaries relative to the pixels
 	 * areas.
 	 * 
-	 * @param width width of the final image
-	 * @param height height of the final image
-	 * @param divisions  This defines in how many pieces the image will be divided
-	 * @param min_c_re minimal boundary of complex real number
-	 * @param min_c_im minimal boundary of imaginary C
-	 * @param max_c_re max boundary of real C
-	 * @param max_c_im max boundary of imaginary C
-	 * @param maxN The amount of iterations to perform.
-	 * @return Position object array in a grid system indicating where the image blocks should be in the final image each object contains said image data
+	 * @param width
+	 *            width of the final image
+	 * @param height
+	 *            height of the final image
+	 * @param divisions
+	 *            This defines in how many pieces the image will be divided
+	 * @param min_c_re
+	 *            minimal boundary of complex real number
+	 * @param min_c_im
+	 *            minimal boundary of imaginary C
+	 * @param max_c_re
+	 *            max boundary of real C
+	 * @param max_c_im
+	 *            max boundary of imaginary C
+	 * @param maxN
+	 *            The amount of iterations to perform.
+	 * @return Position object array in a grid system indicating where the image
+	 *         blocks should be in the final image each object contains said image
+	 *         data
 	 * 
 	 */
 	public static Position[][] calculate_divisions_areas(int width, int height, int divisions, double min_c_re,
@@ -239,10 +323,16 @@ public class Main {
 	}
 
 	/**
-	 * The method distributes the image chunks accross the given set of servers and receives the gray scale data.
-	 * @param chunks object array that holds all data values for the image sets.
-	 * @param fractal_input object that holds all input values.
-	 * @return Position object array in a grid system indicating where the image blocks should be in the final image each object contains said image data
+	 * The method distributes the image chunks accross the given set of servers and
+	 * receives the gray scale data.
+	 * 
+	 * @param chunks
+	 *            object array that holds all data values for the image sets.
+	 * @param fractal_input
+	 *            object that holds all input values.
+	 * @return Position object array in a grid system indicating where the image
+	 *         blocks should be in the final image each object contains said image
+	 *         data
 	 */
 	public static Position[][] chunk_distribution_to_servers(Position[][] chunks, UserInput fractal_input) {
 
@@ -276,9 +366,13 @@ public class Main {
 
 	/*
 	 * This method loops trough chunk object and assigns servers to it.
+	 * 
 	 * @param chunks object array that holds all data values for the image sets.
+	 * 
 	 * @param fractal_input object that holds all input values.
-	 * @return Position object array in a grid system indicating where the image blocks should be in the final image each object contains said image data
+	 * 
+	 * @return Position object array in a grid system indicating where the image
+	 * blocks should be in the final image each object contains said image data
 	 */
 	public static Position[][] chuk_designation_by_servers(Position[][] chunks, UserInput fractal_input) {
 		// get the server
