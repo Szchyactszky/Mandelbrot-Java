@@ -12,12 +12,22 @@ import java.util.Scanner;
  * This is server, it should receive requests on the specified port, calculate
  * the Mandelbrot function and return it as String of pixel values separated by
  * comma
- * https://docs.oracle.com/javase/tutorial/networking/sockets/readingWriting.html
+ *
+ * @author Ugis Varslavans
+ * @version 1.0
+ * @since 2018-01-13
  */
-
 public class srv {
 	static String newline = System.getProperty("line.separator");
 
+	/**
+	 * This is the main method which calls fractal_server function and starts the
+	 * server.
+	 * 
+	 * @param args
+	 *            Unused.
+	 * @return Nothing.
+	 */
 	public static void main(String[] args) {
 
 		fractal_server();
@@ -26,6 +36,8 @@ public class srv {
 	/**
 	 * Starts the fractal server. does infinite loop and passes each connection to
 	 * new thread.
+	 * 
+	 * @return Nothing.
 	 */
 	public static void fractal_server() {
 		System.out.print("->Choose the server port: ");
@@ -43,10 +55,10 @@ public class srv {
 				// accept connections
 				Socket clientSocket = serversocket.accept();
 
-				// accept connection and pass it to the thread
+				// accept connection and pass it to the thread 
+				//each connection is new thread.
 				new MyThread1(clientSocket).start();
-				
-				
+
 			}
 			// serversocket.close();
 		} catch (IOException e) {
@@ -56,10 +68,10 @@ public class srv {
 
 	}
 
-	
-
 	/**
 	 * Parse the input received by client and return calculated fractal image
+	 * @param input the input recieved from client
+	 * @return image_lines contains image gray scale values in a string seperated by comma
 	 */
 	public static String process_input_and_calc_fractal(String input) {
 		// split string by slash
@@ -84,8 +96,16 @@ public class srv {
 	}
 
 	/**
-	 * Calculate the Mandelbrot fractal by given variables. Returns 2D array
-	 * containing int values for each pixel.
+	 * Calculate the Mandelbrot fractal by given variables and returns it as array of pixels.
+	 * @param width width of the final image
+	 * @param height height of the final image
+	 * @param divisions  This defines in how many pieces the image will be divided
+	 * @param min_c_re minimal boundary of complex real number
+	 * @param min_c_im minimal boundary of imaginary C
+	 * @param max_c_re max boundary of real C
+	 * @param max_c_im max boundary of imaginary C
+	 * @param max_n The amount of iterations to perform.
+	 * @return dataValues array contains gray map image values for the picture in array by pixels.
 	 */
 	public static int[][] calculateFractal(double min_c_re, double min_c_im, double max_c_re, double max_c_im,
 			int max_n, int width, int height) {
@@ -132,7 +152,8 @@ public class srv {
 	/**
 	 * Converts 2D array produced by calculateFractal function and tutn in to A
 	 * String where lines are comma separated.
-	 * 
+	 * @param arr array contains gray map image value
+	 * @return block contains the same values that is comma seperated but in string format.
 	 */
 	public static String array_to_string(int[][] arr) {
 		String block = "";
@@ -157,17 +178,24 @@ public class srv {
 }
 
 /**
- * Threading class
+ * Class for Threads
  */
 class MyThread1 extends Thread {
 	private Socket clientSocket;
 
-	// constructor
+	/**
+	 * Constructor 
+	 * @param clientSocket assigns the socket to the object.
+	 */
 	public MyThread1(Socket clientSocket) {
 		this.clientSocket = clientSocket;
 	}
 
-	// default function to run.
+	/**
+	 * Default function that is initialized when object.start(); is called.
+	 * Reads the client data processes it and returns the processed data as comma seperated string.
+	 * @return Nothing
+	 */
 	@Override
 	public void run() {
 		try {
@@ -194,9 +222,8 @@ class MyThread1 extends Thread {
 			out.println(img_part);
 
 			System.out.println("->returning Response.");
-			
-			//close the thread?
-			
+
+			// close the thread?
 
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

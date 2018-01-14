@@ -1,5 +1,11 @@
 package mandelbrot;
-
+/**
+ * UserInput object class for storing user input values.
+ *
+ * @author Ugis Varslavans
+ * @version 1.0
+ * @since 2018-01-13
+ */
 public class UserInput {
 	private double minR;
 	private double minI;

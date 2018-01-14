@@ -3,15 +3,20 @@ package mandelbrot;
 import java.util.*;
 
 /**
- * Class that manages image processing functions including saving and composing
- * the image.
- */
+* Imgmgm class implenets function to handle the PGM image actions and its helper functions.
+* 
+*
+* @author  Ugis Varslavans
+* @version 1.0
+* @since   2018-01-13
+*/
 public class Imgmgm {
 	private static Formatter forma;
 	static String newline = System.getProperty("line.separator");
 
 	/**
 	 * Creates file with hard coded name.
+	 * @return Nothing
 	 */
 	public void createFile() {
 		try {
@@ -25,6 +30,8 @@ public class Imgmgm {
 
 	/**
 	 * Tries to open a file with specified name.
+	 * @param name This is first parameter to the method.
+	 * @return Nothing
 	 */
 	public static void openFile(String name) {
 		try {
@@ -36,12 +43,15 @@ public class Imgmgm {
 
 	/**
 	 * Closes the file.
+	 * @return Nothing
 	 */
 	public static void closeFile() {
 		forma.close();
 	}
 	/**
 	 * Converts 2D array in to 1D array of Strings no line breaks.
+	 * @arr This is array that contains gray scale values for image.
+	 * @return This returns 1D array of strings by rows.
 	 */
 	public static String[] array_to_string(int[][] arr) {
 		// define block array
@@ -63,6 +73,10 @@ public class Imgmgm {
 	/**
 	 * Takes array of objects and makes a complete picture out of it and saves it
 	 * package folder
+	 * @width defines width of image in pixels
+	 * @height defines height of image in pixels
+	 * @arr Position type object contains all data about the image chunks.
+	 * @return Nothing.
 	 */
 	public static void objects_to_final_image(int width, int height, Position[][] arr) {
 		System.out.println("Creating final_large_img.pgm file...");

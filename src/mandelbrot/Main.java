@@ -7,11 +7,20 @@ import java.util.concurrent.CountDownLatch;
  * Client version of software. Main function That starts the distribution of
  * image chunks to be calculated around given servers and saves it in a file
  * once it is done.
+ *
+ * @author Ugis Varslavans
+ * @version 1.0
+ * @since 2018-01-13
  */
-public class Main {
 
+public class Main {
+	 /**
+	   * This is the main method which makes use of all the other methods to achieve the end goal.
+	   * @param args Unused.
+	   * @return Nothing.
+	   */
 	public static void main(String[] args) {
-		System.out.println("Client version of Mandelbrot by Ugis Varslvans started.");
+		System.out.println("Client version of Mandelbrot started.");
 		/// read user input
 		UserInput fractal_input = new UserInput();
 
@@ -21,13 +30,10 @@ public class Main {
 		// calculate the divisons
 		Position[][] chunks = calculate_divisions_areas(fractal_input.getLength_x(), fractal_input.getHeight_y(),
 				fractal_input.getDivisions(), fractal_input.getMinR(), fractal_input.getMinI(), fractal_input.getMaxR(),
-				fractal_input.getMaxI(),fractal_input.getMaxN());
+				fractal_input.getMaxI(), fractal_input.getMaxN());
 
 		// distribute them across servers and acquire all the parts of image
-		 chunks = chunk_distribution_to_servers(chunks, fractal_input);
-
-		// #-#-#-# distribute all img parts to first server only no Multitreading
-//		chunks = chunk_to_first_server(chunks, fractal_input);
+		chunks = chunk_distribution_to_servers(chunks, fractal_input);
 
 		// finish constructing the image and save it
 		Imgmgm.objects_to_final_image(fractal_input.getLength_x(), fractal_input.getHeight_y(), chunks);
@@ -36,7 +42,8 @@ public class Main {
 	}
 
 	/**
-	 * Reads user input and processes it in string array, separates server address.
+	 * Reads user input and processes it in object, separates server address.
+	 * @return fractal_input object that contains all input.
 	 */
 	public static UserInput readUserInput() {
 
@@ -77,6 +84,7 @@ public class Main {
 
 	/**
 	 * calculates fractals locally. prototype
+	 * @return Nothing.
 	 */
 	public static void Calculate_fractals_localy() {
 		System.out.println(" minR minIM maxR maxIM maxN x y divisions servern servern+1: ");
@@ -105,8 +113,8 @@ public class Main {
 				 * to the servers.
 				 */
 
-				Position[][] chunks = calculate_divisions_areas(x, y, divisions, min_c_re, min_c_im, max_c_re,
-						max_c_im,max_n);
+				Position[][] chunks = calculate_divisions_areas(x, y, divisions, min_c_re, min_c_im, max_c_re, max_c_im,
+						max_n);
 
 				// calculate the images seperately.
 				for (int i = 0; i < chunks.length; ++i) {
@@ -118,8 +126,8 @@ public class Main {
 						int width = chunks[i][j].getLength_x();
 						int height = chunks[i][j].getHeight_y();
 						// invoke calculation
-						int[][] fractalData = srv.calculateFractal(min_c_rec, min_c_imc, max_c_rec, max_c_imc,
-								max_n, width, height);
+						int[][] fractalData = srv.calculateFractal(min_c_rec, min_c_imc, max_c_rec, max_c_imc, max_n,
+								width, height);
 						// turn the data array in to one long string with new line breaks and add it to
 						// the object.
 						chunks[i][j].setPgmdata(Imgmgm.array_to_string(fractalData));
@@ -142,8 +150,18 @@ public class Main {
 	/**
 	 * Calculate the division area and its location relative to the whole image
 	 * calculate the real and imaginary axis boundaries relative to the pixels
-	 * areas. Return object array in a grid system indicating where the image block
-	 * should be in whole image.
+	 * areas.
+	 * 
+	 * @param width width of the final image
+	 * @param height height of the final image
+	 * @param divisions  This defines in how many pieces the image will be divided
+	 * @param min_c_re minimal boundary of complex real number
+	 * @param min_c_im minimal boundary of imaginary C
+	 * @param max_c_re max boundary of real C
+	 * @param max_c_im max boundary of imaginary C
+	 * @param maxN The amount of iterations to perform.
+	 * @return Position object array in a grid system indicating where the image blocks should be in the final image each object contains said image data
+	 * 
 	 */
 	public static Position[][] calculate_divisions_areas(int width, int height, int divisions, double min_c_re,
 			double min_c_im, double max_c_re, double max_c_im, int maxN) {
@@ -220,85 +238,52 @@ public class Main {
 		return chunks;
 	}
 
-	public static Position[][] chunk_to_first_server(Position[][] chunks, UserInput fractal_input) {
-
-		// get the server
-		String[] servers = fractal_input.getServers();
-		String firstServer = servers[0];
-
-		// loop trough the chunks and process each chunk
-		for (int i = 0; i < chunks.length; ++i) {
-			for (int j = 0; j < chunks[i].length; ++j) {
-				String[] response_array = cli.sendDataToServer(firstServer, chunks[i][j], fractal_input.getMaxN());
-				// put it back in the same array.
-				chunks[i][j].setPgmdata(response_array);
-				System.out.println("<- data for chunk " + i + "-" + j + " Recieved");
-			}
-		}
-
-		return chunks;
-
-	}
-
 	/**
-	 * Function that will distribute the of picture parts across servers.
+	 * The method distributes the image chunks accross the given set of servers and receives the gray scale data.
+	 * @param chunks object array that holds all data values for the image sets.
+	 * @param fractal_input object that holds all input values.
+	 * @return Position object array in a grid system indicating where the image blocks should be in the final image each object contains said image data
 	 */
 	public static Position[][] chunk_distribution_to_servers(Position[][] chunks, UserInput fractal_input) {
 
 		// designate chunks to servers aka set what chunk goes to what server.
 		chunks = chuk_designation_by_servers(chunks, fractal_input);
-		
-		CountDownLatch latch = new CountDownLatch(fractal_input.getDivisions()*fractal_input.getDivisions());
+
+		CountDownLatch latch = new CountDownLatch(fractal_input.getDivisions() * fractal_input.getDivisions());
 
 		// do the treading/waiting part on each chunk here
 
 		for (int i = 0; i < chunks.length; ++i) {
 			for (int j = 0; j < chunks[i].length; ++j) {
-				
+
 				System.out.println("calling Send to server");
-				//throw them in new thread and get response. also pass in latch reference
-				
+				// throw them in new thread and get response. also pass in latch reference
+
 				chunks[i][j].send_to_server(latch);
-				
-				
+
 			}
 		}
-		
-		//how do i know that all threads is finished?
-		/*
-		 * event listener and ????
-		 */
 		try {
 			latch.await();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
-		
-		
+
 		return chunks;
-		
-		
-		
-		
-		
-		
 
 	}
 
 	/*
-	 * 
-	 * mark which chunk will be processed in which server. possible Improvement:
-	 * send chunks serialized to servers one by one?
+	 * This method loops trough chunk object and assigns servers to it.
+	 * @param chunks object array that holds all data values for the image sets.
+	 * @param fractal_input object that holds all input values.
+	 * @return Position object array in a grid system indicating where the image blocks should be in the final image each object contains said image data
 	 */
 	public static Position[][] chuk_designation_by_servers(Position[][] chunks, UserInput fractal_input) {
 		// get the server
 		String[] servers = fractal_input.getServers();
 		// find out how many servers there are. and distribute the image across the
-		// servers.
-		// String firstServer = servers[0];
 		int server_count = servers.length;
 
 		// total amount of blocks the image will be divided to
@@ -311,7 +296,7 @@ public class Main {
 			server_blocks_div[y] = blocks_per_server;
 		}
 
-		// ther eis reminder and the block should be added somwhere.
+		// there is reminder and the block should be added somewhere.
 		int left_blocks = blocks - (blocks_per_server * server_count);
 
 		if (left_blocks >= 1) {

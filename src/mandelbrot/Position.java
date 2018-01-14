@@ -8,9 +8,16 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.concurrent.CountDownLatch;
 
-/*
- * Class for Position object
+/**
+ * Class created to hold the Position object. This object holds all values
+ * required for each image chunk It also contains method to send data to server
+ * by chunk.
+ *
+ * @author Ugis Varslavans
+ * @version 1.0
+ * @since 2018-01-13
  */
+
 public class Position implements Runnable {
 	private int length_x;
 	private int height_y;
@@ -24,25 +31,16 @@ public class Position implements Runnable {
 	private int max_n;
 	private CountDownLatch latch;
 
-	/*
-	 * create tread in object class postition and then loop trough all the objects
-	 * and call this class.-> will create thread and connect to server ->get
-	 * values->save them in object then check if all threads are finished and
-	 * continue with image assembly.
+	/**
+	 * This method sends data to server and waits for response and updates the
+	 * object.
 	 * 
-	 * after thread is finished i should close the thread in server.
-	 * 
+	 * @return Nothing.
 	 */
 	@Override
 	public void run() {
 		// TODO Auto-generated method stub
 
-		// create new thread here and run send to server inside the thread.
-//		System.out.println("Hello from a thread!");
-//		System.out.println("server_ip: " + server_ip);
-		
-		
-		
 		try {
 			Socket cliSoc = new Socket(server_ip, server_port);
 
@@ -51,25 +49,24 @@ public class Position implements Runnable {
 
 			String fromServer;
 
-			String get_value_string = "/mandelbrot/" +min_c_re + "/" + min_c_im + "/"
-					+ max_c_re + "/" + max_c_im + "/" + length_x + "/"
-					+ height_y + "/" + max_n;
+			String get_value_string = "/mandelbrot/" + min_c_re + "/" + min_c_im + "/" + max_c_re + "/" + max_c_im + "/"
+					+ length_x + "/" + height_y + "/" + max_n;
 			System.out.println("");
-			System.out.print("->Sending to server "+server_ip+"");
+			System.out.print("->Sending to server " + server_ip + "");
 			System.out.println(get_value_string);
 
 			out.println(get_value_string);
 
 			fromServer = in.readLine();
 			String[] image_data = new String[height_y];
-			
+
 			image_data = fromServer.split(",");
-			
-			pgmdata=image_data;
-			
-			//substract latch
+
+			pgmdata = image_data;
+
+			// substract latch
 			latch.countDown();
-			
+
 			cliSoc.close();
 			
 
@@ -80,32 +77,30 @@ public class Position implements Runnable {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		
-		
+
 	}
 
-
-
-	//pass in latch
+	/**
+	 * This method creates a thread that will send data to server.
+	 * 
+	 * @param latch
+	 *            This is a counter for threads to know when all of them have
+	 *            finished.
+	 * @return Nothing.
+	 */
 	public void send_to_server(CountDownLatch latch) {
-		this.latch=latch;
+		this.latch = latch;
 		(new Thread(this)).start();
-		
-		
-		
 
 	}
-	
-	
-		public int getMax_n() {
+
+	public int getMax_n() {
 		return max_n;
 	}
 
 	public void setMax_n(int max_n) {
 		this.max_n = max_n;
 	}
-	
 
 	public String getServer_ip() {
 		return server_ip;
